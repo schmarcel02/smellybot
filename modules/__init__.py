@@ -4,3 +4,9 @@ from .husker import Husker
 from .jisho import Jisho
 from .quoter import Quoter
 from .sasser import Sasser
+from .asksmel import AskSmel
+from .math import Math
+from .numberfacts import NumberFacts
+from .relay import Relay
+from .tagsniffer import TagSniffer
+from .tagnotifier import TagNotifier
