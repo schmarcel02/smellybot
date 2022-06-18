@@ -1,0 +1,31 @@
+access_token: abcdefghijklmnopqrstuvwxyz1234
+admin_users:
+  testy_testuser: true
+  exy_example: true
+bot_username: SMELsBot
+channels:
+  schmarcel:
+    enabled: true
+    mod_users: {}
+    modules:
+      asksmel:
+        commands:
+          asksmel:
+            command_name: asksmel
+            enabled: true
+        enabled: true
+        module_name: asksmel
+      clapper:
+        commands: {}
+        enabled: false
+        module_name: clapper
+      controller:
+        commands:
+          smellybot:
+            command_name: smellybot
+            enabled: true
+        enabled: true
+        module_name: controller
+    name: SchMarcEL
+master_user: SchMarcEL
+prefix: '!'
