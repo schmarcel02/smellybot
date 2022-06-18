@@ -31,7 +31,7 @@ module_master.add_module(TagSniffer)
 module_master.add_module(TagNotifier)
 module_master.add_module(NumberFacts)
 
-smellybot = SmellyBot(module_master, bot_config, ["SchMarcEL"])
+smellybot = SmellyBot(module_master, bot_config)
 smellybot.run()
 
 # qf = QuoteFarmer(bot_config.get_access_token(), "Nathxn", redo_all=True, start_number=16)
