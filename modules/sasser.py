@@ -1,5 +1,4 @@
 import random
-import time
 
 from twitchio import Message
 from twitchio.ext.commands import Context
@@ -26,10 +25,10 @@ class Sasser(BotModule):
     async def handle_message(self, message: Message):
         pass
 
-    async def brb(self, ctx: Context):
+    async def brb(self, ctx: Context, _, __, ___):
         await self.send_sassy_answer(ctx.author.name)
 
-    async def back(self, ctx: Context):
+    async def back(self, ctx: Context, _, __, ___):
         await self.send_sassy_answer(ctx.author.name)
 
     async def send_sassy_answer(self, username: str):

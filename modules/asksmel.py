@@ -38,23 +38,15 @@ class AskSmel(BotModule):
     async def handle_message(self, message: Message):
         pass
 
-    async def jisho(self, ctx: Context):
-        command_split = ctx.message.content.split(" ", 1)
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
-        if len(command_split) == 1:
-            self.logger.warning("No query provided")
-            return
-
-        query = command_split[1]
+    async def jisho(self, ctx: Context, query: str, __, ___):
+        self.logger.info(f"Querying Wolfram Alpha: {query}")
         result = self.wolfram_alpha_api.question(query)
 
         if not self.validate_result(result):
             self.logger.warning("Invalid result: %s", result)
 
         formatted_result = self.format_result(result)
-        await self.bot_channel.send(formatted_result)
+        await self.bot_channel.send(f"{ctx.author.display_name} {formatted_result}")
 
     def validate_result(self, result: str):
         return True

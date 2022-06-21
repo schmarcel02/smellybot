@@ -38,17 +38,8 @@ class Jisho(BotModule):
     async def handle_message(self, message: Message):
         pass
 
-    async def jisho(self, ctx: Context):
-        command_split = ctx.message.content.split(" ", 1)
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
-        if len(command_split) == 1:
-            self.logger.warning("No keyword provided")
-            return
-
-        keyword = command_split[1]
-        result = self.jisho_api.search(keyword)
+    async def jisho(self, _, query, __, ___):
+        result = self.jisho_api.search(query)
         formatted_result = self.format_result(result)
         await self.bot_channel.send(formatted_result)
 

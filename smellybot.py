@@ -1,22 +1,21 @@
 import logging
-import pickle
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, Callable, List, Coroutine, Tuple, Union, Type
 
 from twitchio import Message, Channel
 
-from twitchio.ext import commands
+from twitchio.ext.commands import Context, Command, Bot
 
 from config import smelly_logger, BotConfig, ChannelConfig, ModuleConfig, CommandConfig
 
 
-class ChannelRouterCommand(commands.Command):
+class ChannelRouterCommand(Command):
     def __init__(self, smelly_bot: 'SmellyBot', command_name: str):
         super().__init__(command_name, self.command)
         self.smelly_bot = smelly_bot
 
-    async def command(self, ctx: commands.Context):
+    async def command(self, ctx: Context):
         channel_name = ctx.channel.name.lower()
         channel = self.smelly_bot.channels.get(channel_name)
         if not channel:
@@ -88,13 +87,13 @@ class AccessControl(Enum):
 
 
 class BotCommand:
-    def __init__(self, bot_module: 'BotModule', func: Callable[[commands.Context], Coroutine],
+    def __init__(self, bot_module: 'BotModule', func: Callable[[Context, str, str, str], Coroutine],
                  access_control: AccessControl, name: str, aliases: List[str] = None):
         self.bot_module = bot_module
         self.func = func
         self.name = name or func.__name__.lower()
         self.command_config = bot_module.module_config.get_command(self.name)
-        self.aliases = aliases or []
+        self.aliases: List[str] = aliases or []
         self.access_control = access_control
         self.logger = logging.LoggerAdapter(
             smelly_logger,
@@ -115,14 +114,42 @@ class BotCommand:
         self.logger.info("Disabled command")
         await self.bot_module.bot_channel.send(f"Disabled command: {self.name}")
 
-    async def invoke(self, ctx: commands.Context):
+    async def invoke(self, ctx: Context, arguments: str, command: str, head: str):
         if not self.access_control(self.command_config, ctx.author):
             self.logger.warning("User '%s' is not allowed to use this command")
             return
         if not self.command_config.is_enabled() and not self.name.lower() == "smellybot":
-            self.logger.warning("Command is deactivated")
+            self.logger.warning("Command is disabled")
+            if self.command_config.module_config.channel_config.is_streamer(ctx.author.name) \
+                    or self.command_config.module_config.channel_config.is_mod_user(ctx.author.name) \
+                    or ctx.author.is_mod:
+                await self.bot_module.bot_channel.send(f"Command '{self.name}' is disabled")
             return
-        await self.func(ctx)
+        await self.func(ctx, arguments, command, head)
+
+
+class SuperCommand(BotCommand):
+    def __init__(self, bot_module: 'BotModule', access_control: AccessControl, name: str, aliases: List[str] = None):
+        super().__init__(bot_module, self.route, access_control, name, aliases)
+        self.subcommands: Dict[str, BotCommand] = {}
+
+    def add_subcommand(self, command: BotCommand):
+        for alias in [command.name] + command.aliases:
+            self.subcommands[alias] = command
+
+    async def route(self, ctx: Context, arguments: str, command: str, head: str):
+        arguments_split = arguments.split(" ", 1)
+        subcommand_name = arguments_split[0]
+        try:
+            subarguments = arguments_split[1]
+        except IndexError:
+            subarguments = ""
+
+        subcommand = self.subcommands.get(subcommand_name)
+        if not subcommand:
+            self.logger.warning(f"Command has no subcommand '{subcommand_name}'")
+            return
+        await subcommand.invoke(ctx, subarguments, subcommand_name, head + " " + command)
 
 
 class BotModule(ABC):
@@ -146,30 +173,44 @@ class BotModule(ABC):
     async def activate(self):
         self.module_config.set_enabled(True)
         self.logger.info("Activated module")
-        await self.bot_channel.send(f"Enabled command: {self.name()}")
+        await self.bot_channel.send(f"Enabled module: {self.name()}")
 
     async def deactivate(self):
         self.module_config.set_enabled(False)
         self.logger.info("Deactivated module")
-        await self.bot_channel.send(f"Disabled command: {self.name()}")
+        await self.bot_channel.send(f"Disabled module: {self.name()}")
 
-    def add_command(self, func: Callable[[commands.Context], Coroutine],
+    def add_command(self, func: Callable[[Context, str, str, str], Coroutine],
                     access_control: AccessControl = AccessControl.EVERYONE,
                     name: str = None, aliases: List[str] = None):
         command = BotCommand(self, func, access_control, name, aliases)
         for alias in command.aliases + [command.name]:
             self.commands[alias] = command
 
-    async def run_command(self, command_name: str, ctx: commands.Context):
+    def add_command_object(self, command: BotCommand):
+        for alias in command.aliases + [command.name]:
+            self.commands[alias] = command
+
+    async def run_command(self, command_name: str, ctx: Context):
         self.logger.info(f"{ctx.author.name}: {ctx.message.content}")
         if not self.module_config.is_enabled() and not command_name.lower() == "smellybot":
-            self.logger.warning("Module is deactivated")
+            self.logger.warning("Module is disabled")
+            if self.module_config.channel_config.is_streamer(ctx.author.name) \
+                    or self.module_config.channel_config.is_mod_user(ctx.author.name) \
+                    or ctx.author.is_mod:
+                await self.bot_channel.send(f"Module '{self.name()}' is disabled")
             return
         command = self.commands.get(command_name)
         if not command:
             self.logger.warning("Module has no command '%s'", command_name)
             return
-        await command.invoke(ctx)
+        command_split = ctx.message.content.split(" ", 1)
+        try:
+            arguments = command_split[1]
+        except IndexError:
+            arguments = ""
+
+        await command.invoke(ctx, arguments, command_name, command_name)
 
     async def on_ready(self):
         pass
@@ -227,9 +268,12 @@ class BotChannel:
         for module in self.modules.values():
             await module.on_ready()
 
-    async def run_command(self, command_name: str, ctx: commands.Context):
+    async def run_command(self, command_name: str, ctx: Context):
         if not self.channel_config.is_enabled() and not command_name.lower() == "smellybot":
-            self.logger.warning("Bot is dactivated in this channel")
+            self.logger.warning("Bot is disabled in this channel")
+            if self.channel_config.is_streamer(ctx.author.name) or self.channel_config.is_mod_user(ctx.author.name) \
+                    or ctx.author.is_mod:
+                await self.send("Bot is disabled in this channel")
             return
         module = self.commands.get(command_name)
         if not module:
@@ -254,7 +298,7 @@ class BotChannel:
             await module._handle_usernotice(author_username, tags)
 
 
-class SmellyBot(commands.Bot):
+class SmellyBot(Bot):
     def __init__(self, module_master: ModuleMaster, bot_config: BotConfig, channels: List[str] = None):
         self.module_master = module_master
         self.bot_config = bot_config
@@ -323,3 +367,9 @@ class SmellyBot(commands.Bot):
             smelly_logger.info("???")
 
         await bot_channel.handle_usernotice(author_username, tags)
+
+    async def event_error(self, error: Exception, data: str = None):
+        smelly_logger.error(f"{error}: {data}")
+        
+    async def event_command_error(self, context: Context, error: Exception):
+        smelly_logger.error(f"{error}: {context.author}: {context.message}")

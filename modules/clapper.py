@@ -64,8 +64,8 @@ class Clapper(BotModule):
         return "clapper"
 
     def command_list(self):
-        self.add_command(self.send_clap, name="applause")
-        self.add_command(self.send_f, name="f")
+        self.add_command(self.clap, name="applause", aliases=["clap"])
+        self.add_command(self.f, name="f")
 
     async def handle_message(self, message: Message):
         if message.author.name.lower() == "smelsbot":
@@ -85,10 +85,26 @@ class Clapper(BotModule):
                 await self.send_f()
             return
 
-    async def send_clap(self):
-        clap_messages = ["Clap", "Clap Clap", "Clap Clap Clap"]
-        message = random.choice(clap_messages)
-        await self.bot_channel.send(message)
+    async def f(self, _, __, ___, ____):
+        await self.send_f()
+
+    async def clap(self, _, arguments: str, ___, ____):
+        arguments_split = arguments.split(" ", 1)
+
+        try:
+            number_of_claps = int(arguments_split[0])
+        except IndexError:
+            number_of_claps = None
+        except ValueError:
+            self.logger.warning("Invalid int argument provided")
+            return
+
+        await self.send_clap(number_of_claps)
+
+    async def send_clap(self, number_of_claps: int = None):
+        number_of_claps = number_of_claps or random.randrange(1, 4)
+        message = "Clap " * number_of_claps
+        await self.bot_channel.send(message.strip())
 
     async def send_f(self):
         await self.bot_channel.send("F")

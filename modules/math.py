@@ -23,22 +23,19 @@ class Math(BotModule):
     async def handle_message(self, message: Message):
         pass
 
-    async def random(self, ctx: Context):
-        command_split = ctx.message.content.split(" ", 3)
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
+    async def random(self, _, arguments: str, __, ___):
+        arguments_split = arguments.split(" ", 2)
 
         lower_bound = 0
         upper_bound = 10
 
         try:
-            if len(command_split) > 1:
-                upper_bound = int(command_split[1])
+            if len(arguments_split) > 0:
+                upper_bound = int(arguments_split[0])
 
-            if len(command_split) > 2:
-                lower_bound = int(command_split[1])
-                upper_bound = int(command_split[2])
+            if len(arguments_split) > 1:
+                lower_bound = int(arguments_split[0])
+                upper_bound = int(arguments_split[1])
         except ValueError:
             self.logger.warning("Invalid number argument provided")
             return

@@ -1,4 +1,3 @@
-from twitchio import Message
 from twitchio.ext.commands import Context
 
 from config import ModuleConfig
@@ -17,13 +16,8 @@ class Relay(BotModule):
     def command_list(self):
         self.add_command(self.relay, access_control=AccessControl.ADMIN_PLUS)
 
-    async def handle_message(self, message: Message):
-        pass
-
-    async def relay(self, ctx: Context):
+    async def relay(self, ctx: Context, arguments: str, _, __):
         if not self.module_config.bot_config.is_master_user(ctx.author.name):
             return
 
-        command_split = ctx.message.content.split(" ", 1)
-
-        await self.bot_channel.send(command_split[1])
+        await self.bot_channel.send(arguments)

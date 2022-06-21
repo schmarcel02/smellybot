@@ -262,102 +262,89 @@ class Quoter(BotModule):
                 matching_quotes.append(quote)
         return matching_quotes
 
-    async def fakequote(self, ctx: Context):
-        command_split = ctx.message.content.split(" ", 2)
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
-        if len(command_split) == 1:
-            self.logger.warning("No quote number provided")
-            return
+    async def fakequote(self, _, arguments: str, __, ___):
+        arguments_split = arguments.split(" ", 1)
 
         try:
-            quote_number = int(command_split[1])
-        except:
+            quote_number = int(arguments_split[0])
+        except IndexError:
+            self.logger.warning("No quote number provided")
+            return
+        except ValueError:
             self.logger.warning("Quote number is not a number")
             return
+
         quote = self.quote_context.get_quote(quote_number)
         if not quote:
             self.logger.warning("Quote %s not found in %s's quotes", quote_number, self.quote_context.channel_name)
             return
 
-        if len(command_split) > 2:
-            arguments = command_split[2]
-        else:
-            arguments = ""
-        arguments_split = shlex.split(arguments)
-        if len(arguments_split) % 2 != 0:
+        try:
+            fake_arguments = shlex.split(arguments_split[2])
+        except IndexError:
+            fake_arguments = []
+
+        if len(fake_arguments) % 2 != 0:
             self.logger.warning("Uneven number of arguments provided")
             return
 
-        await self.dispatch_fakequote(quote, arguments_split)
+        await self.dispatch_fakequote(quote, fake_arguments)
 
-    async def crossquote(self, ctx: Context):
-        command_split = ctx.message.content.split(" ")
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
-        if len(command_split) == 1:
+    async def crossquote(self, _, arguments: str, __, ___):
+        arguments_split = arguments.split(" ", 2)
+        try:
+            cross_channel_name = arguments_split[0]
+        except IndexError:
             self.logger.warning("No channel name provided")
             return
-
-        cross_channel_name = command_split[1]
 
         if not master_quote_store.has_channel(cross_channel_name):
             self.logger.warning(f"Channel %s not found", cross_channel_name)
             return
 
-        if len(command_split) == 2:
-            quote = master_quote_store.get_random_quote(cross_channel_name)
-            if not quote:
-                self.logger.warning(f"%s has no quotes", cross_channel_name)
-        else:
-            try:
-                quote_number = int(command_split[2])
-            except:
-                self.logger.warning("Quote number is not a number")
-                return
+        try:
+            quote_number = int(arguments_split[1])
             quote = master_quote_store.get_quote(cross_channel_name, quote_number)
             if not quote:
                 self.logger.warning(f"Quote %s not found in %s's quotes", quote_number, cross_channel_name)
                 return
+        except IndexError:
+            quote = master_quote_store.get_random_quote(cross_channel_name)
+            if not quote:
+                self.logger.warning(f"%s has no quotes", cross_channel_name)
+        except ValueError:
+            self.logger.warning("Quote number is not a number")
+            return
         await self.send_quote(quote)
 
-    async def searchquote(self, ctx: Context):
-        command_split = ctx.message.content.split(" ", 1)
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
-        if len(command_split) == 1:
+    async def searchquote(self, _, arguments: str, __, ___):
+        if not arguments:
             self.logger.warning("No keywords provided")
             return
-        arguments = command_split[1]
         arguments_split = shlex.split(arguments)
         matching_quotes = self.findquotes(arguments_split)
         self.quote_context.set_active_quote_list(matching_quotes)
 
         await self.dispatch_next_quote()
 
-    async def searchcrossquote(self, ctx: Context):
-        command_split = ctx.message.content.split(" ", 2)
-        if len(command_split) == 0:
-            self.logger.warning("No... command provided?")
-            return
-        if len(command_split) == 1:
+    async def searchcrossquote(self, _, arguments: str, __, ___):
+        arguments_split = arguments.split(" ", 1)
+        try:
+            cross_channel_name = arguments_split[0]
+        except IndexError:
             self.logger.warning("No channel name provided")
             return
-        if len(command_split) == 2:
+        try:
+            search_arguments = shlex.split(arguments_split[1])
+        except IndexError:
             self.logger.warning("No keywords provided")
             return
-        channel_name = command_split[1]
-        arguments = command_split[2]
-        arguments_split = shlex.split(arguments)
-        matching_quotes = self.findquotes(arguments_split, channel_name)
+        matching_quotes = self.findquotes(search_arguments, cross_channel_name)
         self.quote_context.set_active_quote_list(matching_quotes)
 
         await self.dispatch_next_quote()
 
-    async def nextquote(self, ctx: Context):
+    async def nextquote(self, _, __, ___, ____):
         await self.dispatch_next_quote()
 
     async def dispatch_next_quote(self):
