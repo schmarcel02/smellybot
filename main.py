@@ -7,7 +7,7 @@ from smellybot.config.types.bool import CBool
 from smellybot.config.types.string import CUsername, CString
 from smellybot.smellybot import SmellyBot
 
-from config import smelly_logger
+from config.smelly_logger import smelly_logger
 
 
 config_schema = ConfigSchema()
