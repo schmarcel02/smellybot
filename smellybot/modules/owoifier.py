@@ -84,9 +84,11 @@ class Owoifier(BotModule):
 
     async def target(self, _context: MessageContext, arguments: str, _command: str, _head: str, **_kwargs):
         self.auto_targets.add(arguments)
+        await self.bot_channel.send("Target acquired")
 
     async def untarget(self, _context: MessageContext, arguments: str, _command: str, _head: str, **_kwargs):
         self.auto_targets.remove(arguments)
+        await self.bot_channel.send("We'll get 'em next time")
 
     async def send_owo_message(self, message: str):
         owo_message = self.owoify_message(message)

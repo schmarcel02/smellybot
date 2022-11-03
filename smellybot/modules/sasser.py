@@ -21,6 +21,7 @@ class Sasser(BotModule):
     def command_list(self):
         self.add_command(BotCommand(Config("brb", self.config), self, self.brb, name="brb", access_control=MasterOnly()))
         self.add_command(BotCommand(Config("back", self.config), self, self.back, name="back", access_control=MasterOnly()))
+        self.add_command(BotCommand(Config("bingchilling", self.config), self, self.bingchilling, name="🍦", access_control=MasterOnly()))
 
     async def _handle_message(self, context: MessageContext):
         pass
@@ -30,6 +31,9 @@ class Sasser(BotModule):
 
     async def back(self, context: MessageContext, _, __, ___, **_kwargs):
         await self.send_sassy_answer(context.author.display_name)
+
+    async def bingchilling(self, context: MessageContext, _, __, ___, **_kwargs):
+        await self.bot_channel.send("早上好中国 现在我有冰淇淋🍦我很喜欢冰淇淋🍦但是 速度与激情9 比冰淇淋 🍦度与激情 速度与激情9 我最喜欢 所以…")
 
     async def send_sassy_answer(self, username: str):
         answers = [

@@ -6,6 +6,7 @@ from smellybot.modules.controller2 import Controller
 from smellybot.modules.crumber import Crumber
 from smellybot.modules.owoifier import Owoifier
 from smellybot.modules.pyramid import Pyramid
+from smellybot.modules.tally_competition import TallyComp
 
 from .clapper import Clapper
 from .husker import Husker
@@ -54,3 +55,4 @@ ModuleMaster.add_module(Crumber)
 ModuleMaster.add_module(Owoifier)
 ModuleMaster.add_module(UrbanDictionary)
 ModuleMaster.add_module(Pyramid)
+ModuleMaster.add_module(TallyComp)
