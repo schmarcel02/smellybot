@@ -7,7 +7,7 @@ from smellybot.config.types.bool import CBool
 from smellybot.config.types.string import CUsername, CString
 from smellybot.smellybot import SmellyBot
 
-from config import smelly_logger
+from smellybot.logger.smelly_logger import slogger
 
 
 config_schema = ConfigSchema()
@@ -37,5 +37,5 @@ root_config.register(ListConfigDefinition("mod_users", unique=True, ctype=CUsern
 root_config.register(ConfigDefinition("enabled", ctype=CBool()),
                      read_access_control=ModPlus(), write_access_control=ModPlus())
 
-smellybot = SmellyBot(root_config, smelly_logger)
+smellybot = SmellyBot(root_config, slogger)
 smellybot.run()

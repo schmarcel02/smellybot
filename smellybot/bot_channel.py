@@ -7,7 +7,7 @@ from datetime import datetime
 from twitchio import Channel, Chatter, Message
 from twitchio.ext.commands import Context
 
-from config import smelly_logger
+from smellybot.logger.smelly_logger import slogger
 from smellybot.channel_context import ChannelContext
 from smellybot.config.definition import ListConfigDefinition
 from smellybot.config.element import ListConfigElement
@@ -31,7 +31,7 @@ class BotChannel(AbstractChannel):
         self.mod_users_config = cast(ListConfigElement, config.element("mod_users"))
         self.enabled_config = config.element("enabled")
 
-        self.logger = logging.LoggerAdapter(smelly_logger, extra={"channel_name": name})
+        self.logger = logging.LoggerAdapter(slogger, extra={"channel_name": name})
         self.config = config
         self.bot = bot
         self.name = name

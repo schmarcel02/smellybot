@@ -38,8 +38,8 @@ log_filename = f'smellybot_{day}.log'
 
 os.makedirs(log_directory, exist_ok=True)
 
-smelly_logger = logging.getLogger("smelly_bot")
-smelly_logger.setLevel(logging.DEBUG)
+slogger = logging.getLogger("smelly_bot")
+slogger.setLevel(logging.DEBUG)
 
 smelly_formatter = SmellyFormatter()
 
@@ -51,5 +51,5 @@ stream_handler = logging.StreamHandler(sys.stdout)
 stream_handler.setLevel(logging.INFO)
 stream_handler.setFormatter(smelly_formatter)
 
-smelly_logger.addHandler(file_handler)
-smelly_logger.addHandler(stream_handler)
+slogger.addHandler(file_handler)
+slogger.addHandler(stream_handler)
