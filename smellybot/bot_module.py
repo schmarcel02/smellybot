@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict
 
-from config import smelly_logger
+from smellybot.logger.smelly_logger import slogger
 from smellybot.abstract_classes import AbstractCommand, AbstractModule
 from smellybot.config.secure_config import Config
 from smellybot.context import MessageContext
@@ -16,7 +16,7 @@ class BotModule(AbstractModule, ABC):
 
         self.bot_channel = bot_channel
         self.logger = logging.LoggerAdapter(
-            smelly_logger,
+            slogger,
             extra={
                 "channel_name": bot_channel.name,
                 "module_name": self.name()

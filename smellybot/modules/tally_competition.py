@@ -1,3 +1,5 @@
+import re
+
 import yaml
 
 from smellybot.bot_command import BotCommand
@@ -7,18 +9,22 @@ from smellybot.access_control import Everyone, ModPlus
 
 
 class TallyComp(BotModule):
+    USERNAME_REGEX = re.compile(r'^[a-zA-Z0-9_]+$')
+    POINTS_CAP = 30
+
     def __init__(self, config: Config, bot_channel):
         super().__init__(config, bot_channel)
-        print("init standings")
         self.standings = {}
         self.load_standings()
         self.command_list()
 
     def load_standings(self):
+        self.logger.info("Loading standings...")
         with open("data/standings.yaml", "r+") as standings_file:
             self.standings = yaml.load(standings_file, Loader=yaml.SafeLoader)["standings"]
 
     def save_standings(self):
+        self.logger.info("Saving standings...")
         with open("data/standings.yaml", "w+") as standings_file:
             yaml.dump({"standings": self.standings}, standings_file, Dumper=yaml.SafeDumper)
 
@@ -28,44 +34,68 @@ class TallyComp(BotModule):
 
     def command_list(self):
         self.add_command(BotCommand(Config("win", self.config), self, self.win, name="win", access_control=ModPlus()))
+        self.add_command(BotCommand(Config("wingp", self.config), self, self.wingp, name="wingp", access_control=ModPlus()))
         self.add_command(BotCommand(Config("unwin", self.config), self, self.unwin, name="unwin", access_control=ModPlus()))
-        self.add_command(BotCommand(Config("standings", self.config), self, self.c_standings, name="standings", access_control=Everyone()))
+        self.add_command(BotCommand(Config("standings", self.config), self, self.standings_table, name="standings", access_control=Everyone()))
 
-    async def c_standings(self, _, _arguments: str, ___, ____, **_kwargs):
+    def clean_username(self, username: str):
+        return username.strip(" \n\t@").lower()
+
+    def check_username(self, username: str):
+        return self.USERNAME_REGEX.fullmatch(username)
+
+    def get_points(self, username: str):
+        if username not in self.standings:
+            return 0
+        return self.standings[username]
+
+    def increment_points(self, username: str, amount: int = 1):
+        if username not in self.standings:
+            self.standings[username] = 0
+        self.standings[username] += amount
+
+    async def standings_table(self, _, _arguments: str, ___, ____, **_kwargs):
         await self.send_standings()
 
     async def win(self, _, arguments: str, ___, ____, **_kwargs):
-        print("win", arguments)
-        username = arguments.strip()
-        username = username.strip("@")
-        username = username.lower()
-        if " " in username or "@" in username:
-            self.bot_channel.send("Invalid username")
-        if username not in self.standings:
-            self.standings[username] = 0
-        self.standings[username] += 1
-        if self.standings[username] == 0:
-            del self.standings[username]
+        username = self.clean_username(arguments)
+        if not self.check_username(username):
+            await self.bot_channel.send("Invalid username")
+            return
+
+        points = self.get_points(username)
+
+        if points < 30:
+            self.increment_points(username)
+            self.save_standings()
+            await self.send_standings()
+            return
+
+        await self.bot_channel.send(f"@{username} reached the cap of {self.POINTS_CAP} points and "
+                                    f"can only gain more points by winning all races in a GP. Use !wingp in that case")
+
+    async def wingp(self, _, arguments: str, ___, ____, **_kwargs):
+        username = self.clean_username(arguments)
+        if not self.check_username(username):
+            await self.bot_channel.send("Invalid username")
+            return
+
+        self.increment_points(username)
         self.save_standings()
         await self.send_standings()
+        return
 
     async def unwin(self, _, arguments: str, ___, ____, **_kwargs):
-        print("unwin", arguments)
-        username = arguments.strip()
-        username = username.strip("@")
-        username = username.lower()
-        if " " in username or "@" in username:
-            self.bot_channel.send("Invalid username")
-        if username not in self.standings:
-            self.standings[username] = 0
-        self.standings[username] -= 1
-        if self.standings[username] == 0:
-            del self.standings[username]
+        username = self.clean_username(arguments)
+        if not self.check_username(username):
+            await self.bot_channel.send("Invalid username")
+            return
+
+        self.increment_points(username, -1)
         self.save_standings()
         await self.send_standings()
 
     async def send_standings(self):
-        print("Sending standings")
         ordered_standings = sorted(self.standings.items(), key=lambda d: d[1], reverse=True)
-        standings_message = " | ".join([f"{k}: {v}" for k, v in ordered_standings])
+        standings_message = " | ".join([f"{k}: {v}" for k, v in ordered_standings if v > 0])
         await self.bot_channel.send(standings_message)
