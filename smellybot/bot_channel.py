@@ -100,6 +100,8 @@ class BotChannel(AbstractChannel):
         mod_users = [username.lower() for username in self.mod_users_config.get()]
         if api_user.is_mod or author.username.lower() in mod_users:
             author.add_role("mod")
+        if api_user.is_subscriber:
+            author.add_role("sub")
         return author
 
     def build_context(self, api_user: Chatter, message: str):
