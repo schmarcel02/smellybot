@@ -31,7 +31,7 @@ class Jackbox(BotModule):
     async def jackbox(self, _, arguments, __, ___, **_kwargs):
         results = []
         for game, pack in self.jackbox_games.items():
-            if arguments in game:
+            if arguments.lower() in game.lower():
                 results.append((game, pack))
 
         message = " | ".join([f"{game} in {pack}" for game, pack in results])
