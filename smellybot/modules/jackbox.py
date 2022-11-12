@@ -34,5 +34,5 @@ class Jackbox(BotModule):
             if arguments.lower() in game.lower():
                 results.append((game, pack))
 
-        message = " | ".join([f"{game} in {pack}" for game, pack in results])
+        message = " | ".join([f"'{game}' in {pack}" for game, pack in results])
         await self.bot_channel.send(message)
