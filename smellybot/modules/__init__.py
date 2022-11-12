@@ -4,6 +4,7 @@ from smellybot.abstract_classes import AbstractModule
 from smellybot.exceptions import ModuleNotFoundException
 from smellybot.modules.controller2 import Controller
 from smellybot.modules.crumber import Crumber
+from smellybot.modules.jackbox import Jackbox
 from smellybot.modules.owoifier import Owoifier
 from smellybot.modules.pyramid import Pyramid
 from smellybot.modules.switcher import Switcher
@@ -58,3 +59,4 @@ ModuleMaster.add_module(UrbanDictionary)
 ModuleMaster.add_module(Pyramid)
 ModuleMaster.add_module(TallyComp)
 ModuleMaster.add_module(Switcher)
+ModuleMaster.add_module(Jackbox)
