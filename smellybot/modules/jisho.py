@@ -1,4 +1,5 @@
 import requests
+import romkan
 
 from smellybot.bot_command import BotCommand
 from smellybot.bot_module import BotModule
@@ -52,4 +53,6 @@ class Jisho(BotModule):
         reading = result["data"][0]["japanese"][0]["reading"]
         definitions = ", ".join(result["data"][0]["senses"][0]["english_definitions"])
 
-        return f"{kanji} | {reading} | {definitions}"
+        romaji = romkan.to_roma(reading)
+
+        return f"{kanji} | {reading} | {romaji} | {definitions}"
