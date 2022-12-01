@@ -1,6 +1,7 @@
 import re
 
 import yaml
+import math
 
 from smellybot.bot_command import BotCommand
 from smellybot.bot_module import BotModule
@@ -37,6 +38,7 @@ class TallyComp(BotModule):
         self.add_command(BotCommand(Config("wingp", self.config), self, self.wingp, name="wingp", access_control=ModPlus()))
         self.add_command(BotCommand(Config("unwin", self.config), self, self.unwin, name="unwin", access_control=ModPlus()))
         self.add_command(BotCommand(Config("standings", self.config), self, self.standings_table, name="standings", access_control=Everyone()))
+        self.add_command(BotCommand(Config("ogstandings", self.config), self, self.og_standings, name="ogstandings", access_control=Everyone()))
 
     def clean_username(self, username: str):
         return username.strip(" \n\t@").lower()
@@ -57,22 +59,20 @@ class TallyComp(BotModule):
     async def standings_table(self, _, _arguments: str, ___, ____, **_kwargs):
         await self.send_standings()
 
+    async def og_standings(self, _, _arguments: str, ___, ____, **_kwargs):
+        ordered_standings = sorted(self.standings.items(), key=lambda d: d[1], reverse=True)
+        standings_message = " | ".join([f"{k}: {v}" for k, v in ordered_standings if v > 0])
+        await self.bot_channel.send(standings_message)
+
     async def win(self, _, arguments: str, ___, ____, **_kwargs):
         username = self.clean_username(arguments)
         if not self.check_username(username):
             await self.bot_channel.send("Invalid username")
             return
 
-        points = self.get_points(username)
-
-        if points < 30:
-            self.increment_points(username)
-            self.save_standings()
-            await self.send_standings()
-            return
-
-        await self.bot_channel.send(f"@{username} reached the cap of {self.POINTS_CAP} points and "
-                                    f"can only gain more points by winning all races in a GP. Use !wingp in that case")
+        self.increment_points(username)
+        self.save_standings()
+        await self.send_standings()
 
     async def wingp(self, _, arguments: str, ___, ____, **_kwargs):
         username = self.clean_username(arguments)
@@ -97,5 +97,6 @@ class TallyComp(BotModule):
 
     async def send_standings(self):
         ordered_standings = sorted(self.standings.items(), key=lambda d: d[1], reverse=True)
-        standings_message = " | ".join([f"{k}: {v}" for k, v in ordered_standings if v > 0])
+        capped_standings = [(k, v if v <= 30 else 30 + math.floor((v-30)/4)) for k, v in ordered_standings if v > 0]
+        standings_message = " | ".join([f"{k}: {v}" for k, v in capped_standings if v > 0])
         await self.bot_channel.send(standings_message)

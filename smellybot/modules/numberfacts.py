@@ -56,15 +56,15 @@ class NumberFacts(BotModule):
 
     async def send_funfact(self, username: str, number_of_months: int):
         if self.bot_channel.name.lower() == "nathxn":
-            options = [
-                f"{number_of_months} is the number of shlogs in a shlogger",
-                f"shlog is the {number_of_months}th most common word in the english language",
-                f"the word shlog has been in use for more than {number_of_months} shlogillion years",
-                f"shlogs are worshipped by {number_of_months} different religions"
-            ]
-            funfact = random.choice(options)
+            custom_facts = {}
+        else:
+            custom_facts = {}
+
+        if number_of_months in custom_facts:
+            funfact = random.choice(custom_facts[number_of_months])
         else:
             funfact = self.number_api.fact(number_of_months)[:-1]  # Remove last period
+
         message = f"@{username} Congrats on {number_of_months} months! Did you know that {funfact}?"
         await self.bot_channel.send(message)
 

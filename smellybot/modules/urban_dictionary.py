@@ -1,3 +1,4 @@
+
 import requests
 from math import sqrt
 
@@ -74,5 +75,5 @@ class UrbanDictionary(BotModule):
                 max_definition = definition
 
         if max_definition:
-            return max_definition["definition"]
+            return max_definition["definition"][:480]
         return None

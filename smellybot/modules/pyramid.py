@@ -2,6 +2,8 @@ import random
 
 from smellybot.bot_module import BotModule
 from smellybot.config.secure_config import Config
+from smellybot.config.definition import ConfigDefinition
+from smellybot.config.types.int import CInt
 from smellybot.context import MessageContext
 
 
@@ -9,8 +11,13 @@ class Pyramid(BotModule):
 
     def __init__(self, config: Config, bot_channel):
         super().__init__(config, bot_channel)
-        self.level = 0
-        self.current_emote = ""
+
+        self.chance_to_intervene = config.register(ConfigDefinition("pyramid.chance_to_intervene", ctype=CInt()))
+        self.chance_to_help = config.register(ConfigDefinition("pyramid.chance_to_help", ctype=CInt()))
+
+        self.length = 0
+        self.past_peak = False
+        self.emote = None
 
     @classmethod
     def name(cls):
@@ -21,85 +28,96 @@ class Pyramid(BotModule):
 
         length = len(message_split)
 
-        for i in range(1, len(message_split)):
+        for i in range(1, length):
             if message_split[i - 1] != message_split[i]:
-                self.level = 0
+                self.reset()
                 return
 
-        print("message:", context.message)
-        print("level:", self.level)
-        print("length:", length)
+        emote = message_split[0]
 
-        if self.level == 0:
-            self.current_emote = message_split[0]
-            if length == 1:
-                print("advance to level 1")
-                self.level = 1
+        if emote != self.emote:
+            self.reset(emote, length)
             return
 
-        if message_split[0] != self.current_emote:
-            self.current_emote = message_split[0]
-            if length == 1:
-                print("return to level 1")
-                self.level = 1
-            else:
-                self.level = 0
+        chance_to_intervene = self.chance_to_intervene.get() / 100
+        chance_to_help = chance_to_intervene + self.chance_to_help.get() / 100
 
-        if self.level == 1:
-            if length == 2:
-                if context.author.username == "nathxn":
-                    await self.bot_channel.send("Denied Kappa")
-                    self.level = 0
+        if not self.past_peak:
+            if length == self.length + 1:
+                self.advance(length)
+                return
+            elif length == self.length - 1:
+                if length == 1:
+                    self.reset(emote, 1)
+                    return
+                elif length == 2:
+                    rand = random.random()
+                    if rand < chance_to_intervene:
+                        await self.intervene()
+                        self.reset()
+                    elif rand < chance_to_help:
+                        await self.help()
+                        self.reset(emote, 1)
+                    else:
+                        self.advance(length)
+                    return
                 else:
-                    print("advance to level 2")
-                    self.level = 2
+                    self.past_peak = True
+                    self.advance(length)
+                    return
+
+
+        if length != self.length - 1:
+            self.reset(length)
+            return
+
+        if length == 2:
+            rand = random.random()
+            if rand < chance_to_intervene:
+                await self.intervene()
+                self.reset()
+            elif rand < chance_to_help:
+                await self.help()
+                self.reset(emote, 1)
             else:
-                self.level = 0
+                self.advance(length)
             return
 
-        self.current_emote = message_split[0]
-
-        if self.level == 2:
-            if length == 3:
-                print("advance to level 3")
-                self.level = 3
-            else:
-                self.level = 0
+        if length == 1:
+            self.reset(emote, 1)
             return
 
-        if self.level == 3:
-            if length == 2:
-                if random.random() < 0:
-                    print("intervening")
-                    await self.intervene()
-                    self.level = 0
-                elif random.random() < 0:
-                    print("helping")
-                    await self.help()
-                    self.level = 0
-                else:
-                    print("advance to level 4")
-                    self.level = 4
-            else:
-                self.level = 0
-            return
+    def reset(self, emote: str = None, length: int = 0):
+        if self.length > 1:
+            self.logger.info("Resetting...")
+        self.past_peak = False
+        if emote is not None and length == 1:
+            self.length = 1
+            self.emote = emote
+        else:
+            self.length = 0
+            self.emote = None
 
-        if self.level == 4:
-            if length == 1:
-                if random.random() < 1:
-                    print("intervening late")
-                    await self.intervene_late()
-            self.level = 0
-            return
+    def advance(self, length: int):
+        self.length = length
+        if self.past_peak or length > 1:
+            self.logger.info(f"Pyramid length {length}")
 
     async def help(self):
-        await self.bot_channel.send(self.current_emote)
-
+        self.logger.info(f"helping with emote: {self.emote}")
+        await self.bot_channel.send(self.emote)
 
     async def intervene(self):
-        interventions = ["Kappa", "*coughs*", "Not Cringe"]
-        await self.bot_channel.send(random.choice(interventions))
+        self.logger.info("intervening")
+        interventions = ["Kappa", "No", "JoyAsteroid", "Denied"]
+        intervention = random.choice(interventions)
+        await self.bot_channel.send(intervention)
+        if " " not in intervention:
+            self.reset(intervention, 1)
+        else:
+            self.reset()
 
     async def intervene_late(self):
-        interventions = ["I agree, even I, a soulless machine, find this cringe"]
+        self.logger.info("intervening late")
+        interventions = ["I agree. Even I, a soulless machine, find this cringe"]
         await self.bot_channel.send(random.choice(interventions))

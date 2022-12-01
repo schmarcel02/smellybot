@@ -112,7 +112,7 @@ class Controller(BotModule):
 
     async def _handle_message(self, context: MessageContext):
         pass
-        
+
     async def cmd_config(self, context: MessageContext, arguments: str, _command: str, head: str, config: Config, **_kwargs):
         arguments_split = arguments.split(maxsplit=2)
 
@@ -152,7 +152,7 @@ class Controller(BotModule):
             key = location_and_key[0]
 
         if operation == "get":
-            self.bot_channel.send(config_get(config, location, key, context))
+            await self.bot_channel.send(str(config_get(config, location, key, context)))
             return
         elif operation == "set":
             config_set(config, location, key, value, context)
